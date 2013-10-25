@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 """
+	Notifications require OS 10.9
+	
     State controll keys for your fritz.box voipAPI:
         Activate: #96*5*
         Dissable: #96*4*
@@ -11,14 +13,11 @@ import re
 import logging
 from telnetlib import Telnet
 
-pathNotificationApp = "./core/terminal-notifier.app/Contents/MacOS/terminal-notifier"
 
 class notifier:
     def notify(self, title="call monitor", message="a event occured"):
-        shell = ' -title "{0}" -message "{1}"'.format(title, message)
-        assambled = pathNotificationApp + shell
+        assambled = 'osascript -e \'display notification \"{0}\" with title \"{1}\"\''.format(message, title)
         os.system(assambled)
-
 
 
 class voip:
