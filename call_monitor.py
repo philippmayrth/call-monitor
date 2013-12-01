@@ -12,7 +12,9 @@
         Dissable: #96*4*
 """
 
+
 import os
+import sys
 import re
 import logging
 import signal
@@ -48,15 +50,14 @@ class voip:
                 try:
                     data = telnet.read_until('POTS;', 300) # maybe read while 1 and then do
                 except EOFError:
-                    logging.Waiting('Lost connection to telnet server')
+                    logging.warning('Lost connection to telnet server')
                     self.reconnect()
                 
                 
                 number = '\n'.join(self.only_number.findall(data))
-            
-                logging.info('The number extracted form: {0} is: {1}'.format(data, number))
-            
                 if number:
+                    logging.info('The number extracted form: {0} is: {1}'.format(data, number))
+            
                     nc.notify("Incomming call", "From: {0}".format(number))
             except KeyboardInterrupt:
                     logging.info('KeyboardInterrupt')
@@ -90,7 +91,10 @@ class voip:
 
 
 if __name__ == "__main__":
-
+    
+    scriptname = sys.argv[0]
+    
+    
     def onExit():
         logging.info('exiting')
         callmonitor.delete()
@@ -101,5 +105,25 @@ if __name__ == "__main__":
     log = logging.basicConfig()
     
     signal.signal(signal.SIGTERM, onExit)
-    callmonitor = voip()
+    
+    if os.name != "posix":
+        logging.warning('This deamon is running on an unsopported system')
+        callmonitor = voip()
+        
+    else:
+        try:
+            pid = os.fork()
+            if pid == 0:
+                os.setsid()
+                callmonitor = voip()
+            else:
+                f = open("callmonitord.pid", "w")
+                f.write(str(pid))
+                f.close()
+                
+        except OSError, e:
+            logging.warning('OSError occured with fork() - %s [%d] ' % (e.strerror, e.errno))
+            raise Exception, "%s [%d]" % (e.strerror, e.errno)
+
+
 
